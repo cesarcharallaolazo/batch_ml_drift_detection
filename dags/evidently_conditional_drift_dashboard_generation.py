@@ -96,7 +96,7 @@ def create_dashboard_execute(**context):
 
 with DAG(
     dag_id="evidently_conditional_drift_dashboard_generation",
-    schedule_interval="@daily",
+    schedule_interval="@once",
     default_args=default_args,
     catchup=False,
 ) as dag:
