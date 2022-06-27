@@ -1,11 +1,9 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators.python_operator import ShortCircuitOperator
 from airflow.operators.python_operator import BranchPythonOperator
 
 from datetime import datetime, timedelta
 import os
-import json
 
 import mlflow
 
@@ -39,16 +37,17 @@ def mlflow_run(**context):
 def detect_drift_execute(**context):
     # print("detect_drift_execute   ")
     drift = context.get("ti").xcom_pull(key="dataset_drift")
-    print("drift --> ", drift)
     if drift:
-        return "_"
+        return "mlflow_run_retraining"
+    else:
+        return "mlflow_run_prediction"
 
 
-def no_detect_drift_execute(**context):
-    # print("detect_drift_execute   ")
-    drift = context.get("ti").xcom_pull(key="dataset_drift")
-    if not drift:
-        return "_"
+# def no_detect_drift_execute(**context):
+#     # print("detect_drift_execute   ")
+#     drift = context.get("ti").xcom_pull(key="dataset_drift")
+#     if not drift:
+#         return "_"
 
 
 mlflow_base_path = os.path.join(os.path.dirname(__file__), 'mlflow_pipeline')
@@ -67,16 +66,9 @@ with DAG(
         provide_context=True,
     )
 
-    detect_drift = ShortCircuitOperator(
+    detect_drift = BranchPythonOperator(
         task_id="detect_drift",
         python_callable=detect_drift_execute,
-        provide_context=True,
-        do_xcom_push=False,
-    )
-
-    no_detect_drift = ShortCircuitOperator(
-        task_id="no_detect_drift",
-        python_callable=no_detect_drift_execute,
         provide_context=True,
         do_xcom_push=False,
     )
@@ -90,15 +82,9 @@ with DAG(
     prediction = PythonOperator(
         task_id="mlflow_run_prediction",
         python_callable=mlflow_run,
-        provide_context=True
+        provide_context=True,
+        trigger_rule="none_failed"
     )
 
-    retraining_prediction = PythonOperator(
-        task_id="retraining_mlflow_run_prediction",
-        python_callable=mlflow_run,
-        provide_context=True
-    )
-
-drift_analysis >> [detect_drift, no_detect_drift]
-detect_drift >> retraining >> retraining_prediction
-no_detect_drift >> prediction
+drift_analysis >> detect_drift >> [retraining, prediction]
+retraining >> prediction
