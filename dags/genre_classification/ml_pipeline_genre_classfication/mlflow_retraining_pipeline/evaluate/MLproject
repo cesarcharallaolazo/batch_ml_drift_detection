@@ -1,0 +1,28 @@
+name: download_data
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      step:
+        description: Step name for this pipeline
+        type: str
+        default: step_name
+      input_model_step:
+        description: Fully qualified name for the input model step
+        type: str
+      model_export:
+        description: Fully-qualified artifact name for the exported model to evaluate
+        type: str
+      input_data_step:
+        description: Fully qualified name for the input data step
+        type: str
+      test_data:
+        description: Fully-qualified artifact name for the test data
+        type: str
+    command: >-
+      python run.py --step {step} \
+                    --input_model_step {input_model_step} \
+                    --model_export {model_export} \
+                    --input_data_step {input_data_step} \
+                    --test_data {test_data}

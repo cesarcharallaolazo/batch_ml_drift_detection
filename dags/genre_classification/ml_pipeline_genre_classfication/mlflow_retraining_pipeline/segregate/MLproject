@@ -1,0 +1,39 @@
+name: split_data
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      step:
+        description: Step name for this pipeline
+        type: str
+        default: step_name
+      input_step:
+        description: Fully qualified name for the input step
+        type: str
+      input_artifact:
+        description: Fully qualified name for the input artifact
+        type: str
+      artifact_root:
+        description: Name for the artifact path that will be created
+        type: str
+      test_size:
+        description: Description for the artifact
+        type: float
+      random_state:
+        description: Integer to use to seed the random number generator
+        type: str
+        default: 42
+      stratify:
+        description: If provided, it is considered a column name to be used for stratified splitting
+        type: str
+        default: "null"
+
+    command: >-
+      python run.py --step {step} \
+                    --input_step {input_step} \
+                    --input_artifact {input_artifact} \
+                    --artifact_root {artifact_root} \
+                    --test_size {test_size} \
+                    --random_state {random_state} \
+                    --stratify {stratify}

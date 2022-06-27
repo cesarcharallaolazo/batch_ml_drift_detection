@@ -1,0 +1,29 @@
+name: download_data
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      step:
+        description: Step name for this pipeline
+        type: str
+        default: step_name
+      input_step:
+        description: Fully qualified name for the input step
+        type: str
+      input_artifact:
+        description: Fully qualified name for the input artifact
+        type: str
+      artifact_name:
+        description: Name for the artifact that will be created
+        type: str
+      artifact_description:
+        description: Description for the artifact
+        type: str
+
+    command: >-
+      python run.py --step {step} \
+                    --input_step {input_step} \
+                    --input_artifact {input_artifact} \
+                    --artifact_name {artifact_name} \
+                    --artifact_description {artifact_description}

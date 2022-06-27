@@ -1,0 +1,11 @@
+name: download_data
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - pandas=1.2.3
+  - pip=20.3.3
+  - pyarrow=2.0
+  - mlflow=1.26.0
+  - boto3=1.23.5

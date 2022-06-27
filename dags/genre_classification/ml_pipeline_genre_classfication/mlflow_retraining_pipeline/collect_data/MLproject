@@ -1,0 +1,25 @@
+name: collect_data
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      step:
+        description: Step name for this pipeline
+        type: str
+        default: step_name
+      data_collection_path:
+        description: Collected data path for retraining
+        type: str
+      artifact_name:
+        description: Name for the artifact that will be created
+        type: str
+      artifact_description:
+        description: Description for the artifact
+        type: str
+
+    command: >-
+      python run.py --step {step} \
+                    --data_collection_path {data_collection_path} \
+                    --artifact_name {artifact_name} \
+                    --artifact_description {artifact_description}

@@ -1,0 +1,8 @@
+main:
+  mlflow_tracking_url: "http://test:5000/"
+  #mlflow_tracking_url: null
+  experiment_name: airflow_prod_all_genre_classification
+  execute_steps:
+    - ml
+random_forest_pipeline:
+  export_artifact: "model_export"
