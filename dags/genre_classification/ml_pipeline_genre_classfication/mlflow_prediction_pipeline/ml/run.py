@@ -40,9 +40,11 @@ def go(args):
     pipe = use_model_artifact(args)
 
     used_columns = list(itertools.chain.from_iterable([x[2] for x in pipe['preprocessor'].transformers]))
-    df["genre_predicted"] = pipe.predict(df[used_columns])
 
-    df[["id", "genre_predicted"]].to_csv(args.prediction_path, index=False)
+    # ml predictions
+    df["genre"] = pipe.predict(df[used_columns])
+
+    df.to_csv(args.prediction_path, index=False)
 
 
 if __name__ == "__main__":

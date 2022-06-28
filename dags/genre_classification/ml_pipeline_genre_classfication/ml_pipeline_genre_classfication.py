@@ -5,7 +5,7 @@ from airflow.operators.python_operator import BranchPythonOperator
 from datetime import datetime, timedelta
 import os
 
-import mlflow
+from genre_classification.functions import pipelines, drift
 
 default_args = {
     "start_date": datetime(2020, 1, 1),
@@ -15,66 +15,13 @@ default_args = {
 }
 
 
-def drift_analysis_execute(**context):
-    # dataset_drift = False
-    dataset_drift = True
-
-    context["ti"].xcom_push(key="dataset_drift", value=dataset_drift)
-
-
-def mlflow_all_pipeline_run(**context):
-    print("init mlflow all pipeline run ..")
-    _ = mlflow.run(
-        "./dags/genre_classification/ml_pipeline_genre_classfication/mlflow_all_pipeline",
-        "main",
-        parameters={
-            "hydra_options": "-m main.experiment_name=airflow_prod_all_genre_classification "
-                             "random_forest_pipeline.random_forest.n_estimators=60,90,150"
-        }
-    )
-    print("finish mlflow run.")
-
-
-def mlflow_prediction_pipeline_run(**context):
-    print("init mlflow prediction pipeline run ..")
-    _ = mlflow.run(
-        "./dags/genre_classification/ml_pipeline_genre_classfication/mlflow_prediction_pipeline",
-        "main",
-        # parameters={
-        #     "hydra_options": "-m main.experiment_name=airflow_prod_all_genre_classification "
-        #                      "random_forest_pipeline.random_forest.n_estimators=60,90,150"
-        # }
-    )
-    print("finish mlflow run.")
-
-def mlflow_retraining_pipeline_run(**context):
-    print("init mlflow prediction pipeline run ..")
-    _ = mlflow.run(
-        "./dags/genre_classification/ml_pipeline_genre_classfication/mlflow_retraining_pipeline",
-        "main",
-        # parameters={
-        #     "hydra_options": "-m main.experiment_name=airflow_prod_all_genre_classification "
-        #                      "random_forest_pipeline.random_forest.n_estimators=60,90,150"
-        # }
-    )
-    print("finish mlflow run.")
-
-
-
-def detect_drift_execute(**context):
+def drift_branch_execution(**context):
     # print("detect_drift_execute   ")
     drift = context.get("ti").xcom_pull(key="dataset_drift")
     if drift:
         return "run_retraining"
     else:
         return "run_prediction"
-
-
-# def no_detect_drift_execute(**context):
-#     # print("detect_drift_execute   ")
-#     drift = context.get("ti").xcom_pull(key="dataset_drift")
-#     if not drift:
-#         return "_"
 
 
 mlflow_base_path = os.path.join(os.path.dirname(__file__), 'mlflow_all_pipeline')
@@ -89,29 +36,29 @@ with DAG(
 ) as dag:
     drift_analysis = PythonOperator(
         task_id="drift_analysis",
-        python_callable=drift_analysis_execute,
+        python_callable=drift.drift_analysis_execute,
         provide_context=True,
     )
 
-    detect_drift = BranchPythonOperator(
+    branching_drift_detection = BranchPythonOperator(
         task_id="detect_drift",
-        python_callable=detect_drift_execute,
+        python_callable=drift_branch_execution,
         provide_context=True,
         do_xcom_push=False,
     )
 
     retraining = PythonOperator(
         task_id="run_retraining",
-        python_callable=mlflow_retraining_pipeline_run,
+        python_callable=pipelines.mlflow_retraining_pipeline_run,
         provide_context=False,
     )
 
     prediction = PythonOperator(
         task_id="run_prediction",
-        python_callable=mlflow_prediction_pipeline_run,
+        python_callable=pipelines.mlflow_prediction_pipeline_run,
         provide_context=True,
         trigger_rule="none_failed"
     )
 
-drift_analysis >> detect_drift >> [retraining, prediction]
+drift_analysis >> branching_drift_detection >> [retraining, prediction]
 retraining >> prediction
