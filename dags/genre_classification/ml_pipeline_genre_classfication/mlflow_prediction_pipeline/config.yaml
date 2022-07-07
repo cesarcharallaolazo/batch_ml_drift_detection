@@ -6,3 +6,6 @@ main:
     - ml
 random_forest_pipeline:
   export_artifact: "model_export"
+prediction:
+  daily_path: "./../daily_data/daily_data_20220601.csv"
+  prediction_daily_path: "./../predicted_daily_data/predicted_daily_data_20220601.csv"

@@ -36,7 +36,11 @@ def _detect_dataset_drift(reference, production, column_mapping, get_ratio=False
         return json_report["data_drift"]["data"]["metrics"]["dataset_drift"]
 
 
-def create_drift_dashboard():
+def create_drift_dashboard(file_date):
+    print("path dashboard --> ",
+          f"./dags/genre_classification/ml_pipeline_genre_classfication/"
+          f"mlflow_prediction_pipeline/predicted_daily_data/{file_date}")
+
     features = ["acousticness", "danceability", "duration_ms", "energy",
                 "instrumentalness", "liveness", "loudness", "speechiness",
                 "tempo", "valence", "key", "time_signature"]
@@ -64,8 +68,8 @@ def create_drift_dashboard():
     reference_df = pd.read_csv("./dags/genre_classification/ml_pipeline_genre_classfication/"
                                "mlflow_retraining_pipeline/reference_data/preprocessed_data.csv",
                                low_memory=False)
-    production_df = pd.read_csv("./dags/genre_classification/ml_pipeline_genre_classfication/"
-                                "mlflow_prediction_pipeline/predicted_daily_data/predicted_daily_data_20220601.csv",
+    production_df = pd.read_csv(f"./dags/genre_classification/ml_pipeline_genre_classfication/"
+                                f"mlflow_prediction_pipeline/predicted_daily_data/{file_date}",
                                 low_memory=False)
 
     # # evaluate if there is Drift
@@ -77,35 +81,40 @@ def create_drift_dashboard():
                                    production_df[features_target],
                                    column_mapping=data_columns)
     dir_path = "reports"
-    file_path = "genre_classification_data_and_target_drift.html"
+    file_path = f"genre_classification_data_and_target_drift_{file_date}.html"
     data_drift_dashboard.save(os.path.join(dir_path, file_path))
 
 
-def drift_analysis_execute(**context):
+def drift_analysis_execute(file_date, **context):
     # dataset_drift = False
     # dataset_drift = True
     # dataset_drift = not dataset_drift
 
-    drift_psi = compute_psi()
-    drift_csi, csi_drifted_features = compute_csi(drift_ratio=0.1)
+    drift_psi = compute_psi(file_date)
+    drift_csi, csi_drifted_features = compute_csi(file_date, drift_ratio=0.1)
 
     print("**** psi -->", drift_psi, flush=True)
     print("**** csi -->", drift_csi, flush=True)
 
     dataset_drift = drift_psi or drift_csi  # custom dataset drift detection logic
+    # dataset_drift = not dataset_drift
 
     if dataset_drift:
-        create_drift_dashboard()
+        create_drift_dashboard(file_date)
 
     context["ti"].xcom_push(key="dataset_drift", value=dataset_drift)
 
 
-def compute_psi():
+def compute_psi(file_date):
     target = "genre"
 
+    print("path psi",
+          f"./dags/genre_classification/ml_pipeline_genre_classfication/"
+          f"mlflow_prediction_pipeline/predicted_daily_data/{file_date}")
+
     production_df = pd.read_csv(
-        "./dags/genre_classification/ml_pipeline_genre_classfication/"
-        "mlflow_prediction_pipeline/predicted_daily_data/predicted_daily_data_20220601.csv",
+        f"./dags/genre_classification/ml_pipeline_genre_classfication/"
+        f"mlflow_prediction_pipeline/predicted_daily_data/{file_date}",
         low_memory=False)
 
     reference_df = pd.read_csv(
@@ -148,14 +157,18 @@ def compute_psi():
     return drift_detected
 
 
-def compute_csi(drift_ratio=0.5):
+def compute_csi(file_date, drift_ratio=0.5):
     features = ["acousticness", "danceability", "duration_ms", "energy",
                 "instrumentalness", "liveness", "loudness", "speechiness",
                 "tempo", "valence", "key", "time_signature"]
 
+    print("path csi",
+          f"./dags/genre_classification/ml_pipeline_genre_classfication/"
+          f"mlflow_prediction_pipeline/predicted_daily_data/{file_date}")
+
     current_production_df = pd.read_csv(
-        "./dags/genre_classification/ml_pipeline_genre_classfication/"
-        "mlflow_prediction_pipeline/predicted_daily_data/predicted_daily_data_20220601.csv",
+        f"./dags/genre_classification/ml_pipeline_genre_classfication/"
+        f"mlflow_prediction_pipeline/predicted_daily_data/{file_date}",
         low_memory=False)
 
     current_reference_df = pd.read_csv(

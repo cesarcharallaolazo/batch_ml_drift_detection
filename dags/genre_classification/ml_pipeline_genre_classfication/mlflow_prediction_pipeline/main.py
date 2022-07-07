@@ -30,8 +30,10 @@ def go(config: DictConfig):
                 "step": "prediction",
                 "input_model_step": "random_forest",
                 "model_export": f"{config['random_forest_pipeline']['export_artifact']}",
-                "data_path": "./../daily_data/daily_data_20220601.csv",
-                "prediction_path": "./../predicted_daily_data/predicted_daily_data_20220601.csv"
+                # "data_path": "./../daily_data/daily_data_20220601.csv",
+                "data_path": f"{config['prediction']['daily_path']}",
+                # "prediction_path": "./../predicted_daily_data/predicted_daily_data_20220601.csv",
+                "prediction_path": f"{config['prediction']['prediction_daily_path']}"
             },
             experiment_name=config["main"]["experiment_name"],
             run_name="airflow_daily_ml_prediction"
