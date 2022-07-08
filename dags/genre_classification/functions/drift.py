@@ -4,6 +4,8 @@ import json
 import numpy as np
 import pandas as pd
 
+from scipy import stats
+
 from evidently import ColumnMapping
 from evidently.dashboard import Dashboard
 from evidently.dashboard.tabs import DataDriftTab, CatTargetDriftTab
@@ -228,3 +230,33 @@ def compute_csi(file_date, drift_ratio=0.5):
     drift_detected = True if len(drifted_features) / len(features) >= drift_ratio else False
 
     return drift_detected, drifted_features
+
+
+def calculo_ks(file_date):
+    features = ["acousticness", "danceability", "duration_ms", "energy",
+                "instrumentalness", "liveness", "loudness", "speechiness",
+                "tempo", "valence", "key", "time_signature"]
+
+    print("path ks",
+          f"./dags/genre_classification/ml_pipeline_genre_classfication/"
+          f"mlflow_prediction_pipeline/predicted_daily_data/{file_date}")
+
+    current_production_df = pd.read_csv(
+        f"./dags/genre_classification/ml_pipeline_genre_classfication/"
+        f"mlflow_prediction_pipeline/predicted_daily_data/{file_date}",
+        low_memory=False)
+
+    current_reference_df = pd.read_csv(
+        "./dags/genre_classification/ml_pipeline_genre_classfication/"
+        "mlflow_retraining_pipeline/reference_data/preprocessed_data.csv",
+        low_memory=False)
+
+    p_value = 0.05
+    rejected_features = []
+    for feature in features:
+        print(feature, '-----------------------------------------------------------------------------------')
+        ks = stats.ks_2samp(current_reference_df[feature], current_production_df[feature])
+        if ks[1] < p_value:
+            rejected_features.append(feature)
+
+    return len(rejected_features)
